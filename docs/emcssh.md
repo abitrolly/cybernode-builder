@@ -1,22 +1,28 @@
-#### Usefull links
-1. https://www.apt-browse.org/browse/debian/wheezy/main/i386/initscripts/2.88dsf-41+deb7u1/file/etc/init.d/skeleton
-2. https://emercoin.mintr.org/
-3. https://cryptor.net/tutorial/ustanovka-emercoind-na-vps
+## Basic instruction how to setup emercoind and emcssh service
 
+### [Emercoin blockexplorer](https://emercoin.mintr.org/)
+
+### Emercoin service setup
+
+Prepare your machine:
 ```bash
 sudo apt-get install build-essential
 sudo apt-get install libcurl4-openssl-dev libjansson-dev
 ```
 
+Download and install emercoind and emercoin-cli:
 ```bash
 wget http://downloads.sourceforge.net/project/emercoin/0.6.1/emercoin-0.6.1-linux64.tar.gz
 tar xfz emercoin-0.6.1-linux64.tar.gz
 rm emercoin-0.6.1-linux64.tar.gz
 sudo mv emercoin-0.6.1/bin/emercoind /usr/bin
 sudo mv emercoin-0.6.1/bin/emercoin-cli /usr/bin
+rm -R emercoin-0.6.1
 ```
 
+Add emc group and user:
 ```bash
+su
 addgroup --gid 2000 emc
 adduser --home /home/emc --shell /bin/false --no-create-home --uid 2000 --gid 2000 emc
 adduser emc emc
@@ -27,6 +33,7 @@ cd .emercoin
 nano emercoin.conf
 ```
 
+Setup config for emercoind service:
 ```bash
 rpcuser=emccoinrpc
 rpcpassword=very_long_and_complex_password
@@ -43,6 +50,7 @@ emcdnsallowed=.coin|.emc|.lib|.bazar # Allowed TLDs
 emcdnsverbose=4
 ```
 
+Setup permissions and start emercoind service, wait for blockchain sync:
 ```bash
 chmod 0400 emercoin.conf
 chown -R emc:emc /home/emc/
@@ -50,12 +58,11 @@ su -s /bin/bash emc
 emercoind
 emercoin-cli getinfo
 ```
-[wait for sync]
 
+Daemonize service
 ```bash
 su
 cd /etc/init.d/
-cp skeleton emercoind
 nano emercoind
 chmod 0755 emercoind
 /etc/init.d/emercoind start
@@ -63,6 +70,7 @@ update-rc.d emercoind defaults
 reboot
 ```
 
+Get this script for previous step:
 ```bash
 #! /bin/sh
 ### BEGIN INIT INFO
@@ -225,35 +233,32 @@ esac
 :
 ```
 
+Setup emcssh:
 ```bash
-wget https://github.com/emercoin/emcssh/archive/emcssh-0.0.4.tar.gz
-
 git clone https://github.com/emercoin/emcssh/
-cd emcssh/
-ls
-cd source/
-ls
+cd emcssh/source/
 sudo make
 sudo nano emcssh.conf
+```
 
+Add to emcssh.conf this string with your previously added password:
+```bash
 emcurl http://emccoinrpc:password@127.0.0.1:8775/
+```
 
+Finish setup:
+```bash
 sudo make install
 ```
 
-#### Fix last steps
-
-set user
+Set emcurl http://emccoinrpc:password@127.0.0.1:8775/ to this location [check this, draft]:
 ```
-? sudo nano /etc/emacs/emcssh.conf
 /etc/emercoin/emcssh.conf
-! nano /home/litvintech/.ssh/emcssh_keys
-/home/litvintech/Documents/emcssh/source/emcssh.conf:1:emcurl
 ```
 
+Add file emcssh_keys to your user .ssh folder:
 ```
-- http://emccoinrpc:password@127.0.0.1:8775/
-- /home/emc/.emercoin/emercoin.conf:2:rpcpassword=password
-+ /etc/emercoin/emcssh.conf:1:emcurl http://emccoinrpc:password@127.0.0.1:8775/
-+ /home/litvintech/.ssh/emcssh_keys:1:@cyberfund|@litvintech|@cybermonetarist
+nano .ssh/emcssh_keys
+cat .ssh/emcssh_keys
+@group_example|@user_example|@user_example2
 ```
