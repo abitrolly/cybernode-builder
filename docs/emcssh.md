@@ -1,0 +1,259 @@
+#### Usefull links
+1. https://www.apt-browse.org/browse/debian/wheezy/main/i386/initscripts/2.88dsf-41+deb7u1/file/etc/init.d/skeleton
+2. https://emercoin.mintr.org/
+3. https://cryptor.net/tutorial/ustanovka-emercoind-na-vps
+
+```bash
+sudo apt-get install build-essential
+sudo apt-get install libcurl4-openssl-dev libjansson-dev
+```
+
+```bash
+wget http://downloads.sourceforge.net/project/emercoin/0.6.1/emercoin-0.6.1-linux64.tar.gz
+tar xfz emercoin-0.6.1-linux64.tar.gz
+rm emercoin-0.6.1-linux64.tar.gz
+sudo mv emercoin-0.6.1/bin/emercoind /usr/bin
+sudo mv emercoin-0.6.1/bin/emercoin-cli /usr/bin
+```
+
+```bash
+addgroup --gid 2000 emc
+adduser --home /home/emc --shell /bin/false --no-create-home --uid 2000 --gid 2000 emc
+adduser emc emc
+mkdir /home/emc
+cd /home/emc
+mkdir .emercoin
+cd .emercoin
+nano emercoin.conf
+```
+
+```bash
+rpcuser=emccoinrpc
+rpcpassword=very_long_and_complex_password
+listen=1
+server=1
+rpcallowip=127.0.0.1
+rpcport=8775
+maxconnections=80
+gen=0
+reservebalance=5
+daemon=1
+emcdns=0 # Activate DNS
+emcdnsallowed=.coin|.emc|.lib|.bazar # Allowed TLDs
+emcdnsverbose=4
+```
+
+```bash
+chmod 0400 emercoin.conf
+chown -R emc:emc /home/emc/
+su -s /bin/bash emc
+emercoind
+emercoin-cli getinfo
+```
+[wait for sync]
+
+```bash
+su
+cd /etc/init.d/
+cp skeleton emercoind
+nano emercoind
+chmod 0755 emercoind
+/etc/init.d/emercoind start
+update-rc.d emercoind defaults
+reboot
+```
+
+```bash
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides: emercoind
+# Required-Start: $remote_fs $syslog
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Auto init EmerCoin
+# Description: Auto init EmerCoin via booting system
+### END INIT INFO
+
+# Author: Author: Foo Bar
+#
+# Please remove the "Author" lines above and replace them
+# with your own name if you copy and modify this script.
+
+# Do NOT "set -e"
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Emercoin daemon"
+NAME=emercoind
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS=""
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+CHUID=emc:emc
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+# Return
+# 0 if daemon has been started
+# 1 if daemon was already running
+# 2 if daemon could not be started
+start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
+|| return 1
+start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE --exec $DAEMON -- \
+$DAEMON_ARGS \
+|| return 2
+# Add code here, if necessary, that waits for the process to be ready
+# to handle requests from services started subsequently which depend
+# on this one. As a last resort, sleep for some time.
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+    # Return
+    #   0 if daemon has been stopped
+    #   1 if daemon was already stopped
+    #   2 if daemon could not be stopped
+    #   other if a failure occurred
+    start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+    RETVAL="$?"
+    [ "$RETVAL" = 2 ] && return 2
+    # Wait for children to finish too if this is a daemon that forks
+    # and if the daemon is only ever run from this initscript.
+    # If the above conditions are not satisfied then add some other code
+    # that waits for the process to drop all resources that could be
+    # needed by services started subsequently.  A last resort is to
+    # sleep for some time.
+    start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+    [ "$?" = 2 ] && return 2
+    # Many daemons don't delete their pidfiles when they exit.
+    rm -f $PIDFILE
+    return "$RETVAL"
+}
+
+#
+# Function that sends a SIGHUP to the daemon/service
+#
+do_reload() {
+    #
+    # If the daemon can reload its configuration without
+    # restarting (for example, when it is sent a SIGHUP),
+    # then implement that here.
+    #
+    start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+    return 0
+}
+
+case "$1" in
+  start)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+    do_start
+    case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  stop)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+    do_stop
+    case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  status)
+    status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+    ;;
+  #reload|force-reload)
+    #
+    # If do_reload() is not implemented then leave this commented out
+    # and leave 'force-reload' as an alias for 'restart'.
+    #
+    #log_daemon_msg "Reloading $DESC" "$NAME"
+    #do_reload
+    #log_end_msg $?
+    #;;
+  restart|force-reload)
+    #
+    # If the "reload" option is implemented then remove the
+    # 'force-reload' alias
+    #
+    log_daemon_msg "Restarting $DESC" "$NAME"
+    do_stop
+    case "$?" in
+      0|1)
+        do_start
+        case "$?" in
+            0) log_end_msg 0 ;;
+            1) log_end_msg 1 ;; # Old process is still running
+            *) log_end_msg 1 ;; # Failed to start
+        esac
+        ;;
+      *)
+        # Failed to stop
+        log_end_msg 1
+        ;;
+    esac
+    ;;
+  *)
+    #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+    echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+    exit 3
+    ;;
+esac
+
+:
+```
+
+```bash
+wget https://github.com/emercoin/emcssh/archive/emcssh-0.0.4.tar.gz
+
+git clone https://github.com/emercoin/emcssh/
+cd emcssh/
+ls
+cd source/
+ls
+sudo make
+sudo nano emcssh.conf
+
+emcurl http://emccoinrpc:password@127.0.0.1:8775/
+
+sudo make install
+```
+
+#### Fix last steps
+
+set user
+```
+? sudo nano /etc/emacs/emcssh.conf
+/etc/emercoin/emcssh.conf
+! nano /home/litvintech/.ssh/emcssh_keys
+/home/litvintech/Documents/emcssh/source/emcssh.conf:1:emcurl
+```
+
+```
+- http://emccoinrpc:password@127.0.0.1:8775/
+- /home/emc/.emercoin/emercoin.conf:2:rpcpassword=password
++ /etc/emercoin/emcssh.conf:1:emcurl http://emccoinrpc:password@127.0.0.1:8775/
++ /home/litvintech/.ssh/emcssh_keys:1:@cyberfund|@litvintech|@cybermonetarist
+```
