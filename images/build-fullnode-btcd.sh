@@ -37,5 +37,6 @@ echo ... creating ${IMAGE} image
 VERSION=`cat $BINDIR/VERSION`
 TAG=`cat $BINDIR/TAG`
 docker build --no-cache -t ${IMAGE} --label version="$VERSION" . | tee buildfinal.log
+echo ... tagging ${IMAGE} as ${IMAGE}:${TAG}
 docker tag ${IMAGE} ${IMAGE}:${TAG}
 cd -
