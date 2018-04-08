@@ -35,5 +35,7 @@ echo ... built btcd binaries:
 ls -la $BINDIR
 echo ... creating ${IMAGE} image
 VERSION=`cat $BINDIR/VERSION`
+TAG=`cat $BINDIR/TAG`
 docker build --no-cache -t ${IMAGE} --label version="$VERSION" . | tee buildfinal.log
+docker tag ${IMAGE} ${IMAGE}:${TAG}
 cd -
