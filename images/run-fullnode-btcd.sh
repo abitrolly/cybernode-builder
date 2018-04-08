@@ -58,7 +58,7 @@ PORTS="-p 8333:8333 -p 127.0.0.1:8334:8334"
 
 echo ... starting $NAME $VERSION from $IMAGE
 #ARGS=-d debug
-ARGS="--rpcuser=cyber --rpcpass=cyber --rpclisten=0.0.0.0:8334 --notls"
+ARGS="--rpcuser=cyber --rpcpass=cyber --rpclisten=0.0.0.0:8334 --notls --addcheckpoint=510873:0000000000000000005085d3e8518943180dc918ca12c7738ecb30b57a12f16a"
 docker run -d --restart always --name $NAME $RUNUSER $PORTS -v $VOLUMEMOUNT $IMAGE $ARGS $*
 #    -d                  - run as daemon
 #    --restart always    - when to restart container
