@@ -17,11 +17,11 @@ go get -u github.com/Masterminds/glide
 
 echo --- clone btcd sources ---
 if [ ! -d $GOPATH/src/github.com/btcsuite/btcd ] ; then
-    git clone https://github.com/btcsuite/btcd $GOPATH/src/github.com/btcsuite/btcd
+    git clone --depth=100 https://github.com/btcsuite/btcd $GOPATH/src/github.com/btcsuite/btcd
 else
     echo --- detected btcd, cleaning ---
     rm -R $GOPATH/src/github.com/btcsuite/btcd
-    git clone https://github.com/btcsuite/btcd $GOPATH/src/github.com/btcsuite/btcd
+    git clone --depth=100 https://github.com/btcsuite/btcd $GOPATH/src/github.com/btcsuite/btcd
 fi
 cd $GOPATH/src/github.com/btcsuite/btcd
 git checkout $BTCDHASH
